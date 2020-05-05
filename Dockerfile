@@ -1,4 +1,4 @@
-FROM quay.io/ansible/molecule:3.0.4
+FROM quay.io/ansible/molecule:2.22
 
 LABEL "maintainer"="Javier Ayala <javiergayala@gmail.com>"
 LABEL "repository"="https://github.com/javiergayala/molecule-action"
