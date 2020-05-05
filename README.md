@@ -1,0 +1,133 @@
+# Molecule for GitHub Action
+
+This GitHub action allows you to run [Molecule](https://molecule.readthedocs.io/en/stable/) to test an [Ansible](https://www.ansible.com/) role.
+
+## Inputs
+
+```yaml
+molecule_options:
+  description: |
+    Options:
+      --debug / --no-debug    Enable or disable debug mode. Default is disabled.
+      -c, --base-config TEXT  Path to a base config.  If provided Molecule will
+                              load this config first, and deep merge each
+                              scenario's molecule.yml on top.
+                              (/home/gofrolist/.config/molecule/config.yml)
+      -e, --env-file TEXT     The file to read variables from when rendering
+                              molecule.yml. (.env.yml)
+      --version               Show the version and exit.
+      --help                  Show this message and exit.
+  required: false
+
+molecule_command:
+  description: |
+    Commands:
+      check        Use the provisioner to perform a Dry-Run...
+      cleanup      Use the provisioner to cleanup any changes...
+      converge     Use the provisioner to configure instances...
+      create       Use the provisioner to start the instances.
+      dependency   Manage the role's dependencies.
+      destroy      Use the provisioner to destroy the instances.
+      idempotence  Use the provisioner to configure the...
+      init         Initialize a new role or scenario.
+      lint         Lint the role.
+      list         Lists status of instances.
+      login        Log in to one instance.
+      matrix       List matrix of steps used to test instances.
+      prepare      Use the provisioner to prepare the instances...
+      side-effect  Use the provisioner to perform side-effects...
+      syntax       Use the provisioner to syntax check the role.
+      test         Test (lint, cleanup, destroy, dependency,...
+      verify       Run automated tests against instances.
+  required: true
+  default: "test"
+
+molecule_args:
+  description: |
+    Arguments:
+      --scenario-name foo  Targeting a specific scenario.
+      --driver-name foo    Targeting a specific driver.
+      --all                Target all scenarios.
+      --destroy=always     Always destroy instances at the conclusion of a Molecule run.
+  required: false
+```
+
+## Usage
+
+To use the action simply create an `main.yml` (or choose custom `*.yml` name) in the `.github/workflows/` directory.
+
+### Basic example:
+
+```yaml
+on: [push, pull_request]
+
+jobs:
+  molecule:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: "${{ github.repository }}"
+      - uses: javiergayala/molecule-action@master
+```
+
+> NOTE: the checkout action needs to place the files from the repo in \${{ github.repository }} in order for Molecule to find your role.
+
+### Advanced example:
+
+```yaml
+name: Molecule
+
+on:
+  push:
+    branches:
+      - master
+      - release/v*
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  molecule:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - centos-7
+          - debian-9
+          - fedora-28
+          - oraclelinux-7
+          - ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: "${{ github.repository }}"
+      - name: Molecule
+        uses: javiergayala/molecule-action@master
+        with:
+          molecule_options: --debug --base-config molecule/_shared/base.yml
+          molecule_command: test
+          molecule_args: --scenario-name ${{ matrix.scenario }}
+```
+
+> TIP: Tags are matched to the version of Molecule. For example, use `javiergayala/molecule-action@v3.0.4` to pin the action to use version `3.0.4` of Molecule.
+
+If your role require some python modules (for example `netaddr`) you can install them in molecule prepare step
+
+```yaml
+---
+- name: Prepare
+  hosts: all
+
+  tasks:
+    - name: Install netaddr dependency on controlling host (virtualenv)
+      pip:
+        name: netaddr
+      delegate_to: 127.0.0.1
+```
+
+## License
+
+The Dockerfile and associated scripts and documentation in this project are released under the [MIT](license).
